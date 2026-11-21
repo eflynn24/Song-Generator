@@ -1,0 +1,64 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+
+  ace-step:
+    build:
+      context: https://github.com/ace-step/ACE-Step.git
+      dockerfile: Dockerfile
+    user: root
+    command:
+      - bash
+      - -lc
+      - apt-get update && apt-get install -y --no-install-recommends ffmpeg && pip install --no-cache-dir torchcodec && python3 /app/infer-wrapper.py
+    ports:
+      - "8001:8000"
+      - "7865:7865"
+    volumes:
+      - ace_step_checkpoints:/app/checkpoints
+      - ace_step_outputs:/app/outputs
+      - ./ace-step/infer-wrapper.py:/app/infer-wrapper.py:ro
+    environment:
+      ACE_OUTPUT_DIR: /app/outputs
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: ["compute", "utility", "graphics", "video"]
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+    environment:
+      OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2}
+      MUSIC_API_URL: ${MUSIC_API_URL:-http://ace-step:8000/generate}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/generated:/app/generated
+      - ace_step_outputs:/ace_outputs
+
+  frontend:
+    build:
+      context: ./frontend
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
+
+volumes:
+  ollama_data:
+  ace_step_checkpoints:
+  ace_step_outputs:
+
