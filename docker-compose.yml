@@ -2,29 +2,31 @@ services:
   ollama:
     image: ollama/ollama:latest
     ports:
-      - "11434:11434"
+      - "127.0.0.1:11434:11434"
     volumes:
       - ollama_data:/root/.ollama
     restart: unless-stopped
 
   ace-step:
-    build:
-      context: https://github.com/ace-step/ACE-Step.git
-      dockerfile: Dockerfile
-    user: root
-    command:
-      - bash
-      - -lc
-      - apt-get update && apt-get install -y --no-install-recommends ffmpeg && pip install --no-cache-dir torchcodec && python3 /app/infer-wrapper.py
+    image: ghcr.io/ace-step/ace-step-1.5:latest
     ports:
-      - "8001:8000"
-      - "7865:7865"
+      - "127.0.0.1:8001:8000"
     volumes:
       - ace_step_checkpoints:/app/checkpoints
-      - ace_step_outputs:/app/outputs
-      - ./ace-step/infer-wrapper.py:/app/infer-wrapper.py:ro
+      - ace_step_huggingface:/root/.cache/huggingface
     environment:
-      ACE_OUTPUT_DIR: /app/outputs
+      ACESTEP_MODE: api
+      ACESTEP_API_HOST: 0.0.0.0
+      ACESTEP_API_PORT: 8000
+      ACESTEP_CONFIG_PATH: ${ACE_STEP_MODEL:-acestep-v15-turbo}
+      ACESTEP_LM_MODEL_PATH: ${ACE_STEP_LM_MODEL:-acestep-5Hz-lm-0.6B}
+      ACESTEP_DEVICE: ${ACESTEP_DEVICE:-auto}
+      ACESTEP_LM_DEVICE: ${ACESTEP_LM_DEVICE:-cpu}
+      ACESTEP_LM_BACKEND: ${ACESTEP_LM_BACKEND:-pt}
+      ACESTEP_LM_OFFLOAD_TO_CPU: ${ACESTEP_LM_OFFLOAD_TO_CPU:-true}
+      ACESTEP_OFFLOAD_TO_CPU: ${ACESTEP_OFFLOAD_TO_CPU:-true}
+      ACESTEP_OFFLOAD_DIT_TO_CPU: ${ACESTEP_OFFLOAD_DIT_TO_CPU:-true}
+      TOKENIZERS_PARALLELISM: "false"
     runtime: nvidia
     deploy:
       resources:
@@ -33,6 +35,17 @@ services:
             - driver: nvidia
               count: all
               capabilities: ["compute", "utility", "graphics", "video"]
+    shm_size: 2gb
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - -fsS
+        - http://127.0.0.1:8000/health
+      interval: 30s
+      timeout: 5s
+      start_period: 300s
+      retries: 5
     restart: unless-stopped
 
   backend:
@@ -41,13 +54,19 @@ services:
     environment:
       OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434}
       OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2}
-      MUSIC_API_URL: ${MUSIC_API_URL:-http://ace-step:8000/generate}
+      MUSIC_API_URL: ${MUSIC_API_URL:-http://ace-step:8000}
+      ACE_STEP_MODEL: ${ACE_STEP_MODEL:-acestep-v15-turbo}
+      ACE_STEP_QUALITY_MODEL: ${ACE_STEP_QUALITY_MODEL:-acestep-v15-xl-sft}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost}
+      DEFAULT_USER_PASSWORD: ${DEFAULT_USER_PASSWORD:-}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      DATABASE_PATH: ${DATABASE_PATH:-/app/data/song_generator.sqlite3}
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     volumes:
+      - ./backend/data:/app/data
       - ./backend/generated:/app/generated
-      - ace_step_outputs:/ace_outputs
+      - ./backend/uploads:/app/uploads
 
   frontend:
     build:
@@ -55,10 +74,10 @@ services:
     depends_on:
       - backend
     ports:
-      - "5173:80"
+      - "127.0.0.1:5173:80"
 
 volumes:
   ollama_data:
   ace_step_checkpoints:
-  ace_step_outputs:
+  ace_step_huggingface:
 

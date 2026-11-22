@@ -5,6 +5,8 @@ __pycache__/
 *.pyc
 .env
 backend/generated/
+backend/data/
+*.sqlite3
 smoke-test.wav
 *.wav
 *.mp3

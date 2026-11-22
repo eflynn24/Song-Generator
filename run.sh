@@ -19,6 +19,11 @@ if ! docker info >/dev/null 2>&1; then
   exit 1
 fi
 
+if [[ ! -f .env ]]; then
+  echo "Run ./install.sh first to create the private account bootstrap password." >&2
+  exit 1
+fi
+
 docker compose up -d
 
 echo
@@ -26,7 +31,12 @@ echo "Song Generator is running:"
 echo "  Application: http://localhost:5173"
 echo "  API docs:    http://localhost:8000/docs"
 echo
-echo "Use the application page to generate and download songs."
+echo "Continue as guest for a temporary session, or sign in/create an account"
+echo "to keep songs in a persistent library. Guest data is erased when you end"
+echo "the session or after 20 minutes of inactivity."
+echo "Describe a song, choose vocals/instruments, and generate. ACE-Step uses its"
+echo "default song length. You can optionally add an MP3 reference."
 echo "View logs with: docker compose logs -f"
 echo "Stop containers with: docker compose down"
+echo "Ports are localhost-only. Use an HTTPS reverse proxy before remote access."
 

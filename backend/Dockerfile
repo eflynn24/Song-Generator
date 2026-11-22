@@ -10,7 +10,7 @@ RUN apt-get update \
 
 COPY app ./app
 
-RUN mkdir -p generated
+RUN mkdir -p generated uploads
 
 EXPOSE 8000
 

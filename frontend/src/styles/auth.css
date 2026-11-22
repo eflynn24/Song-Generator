@@ -1,0 +1,33 @@
+.auth-page { display: grid; min-height: 100vh; place-items: center; }
+.auth-card {
+  width: min(440px, calc(100% - 32px));
+  padding: 34px;
+  border: 1px solid #222737;
+  border-radius: 18px;
+  background: rgba(14, 17, 27, 0.96);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.28);
+}
+.auth-card h1 { margin-bottom: 8px; }
+.auth-intro { margin: 0 0 24px; color: #9aa1b4; font-size: 13px; line-height: 1.6; }
+.auth-card form { display: flex; flex-direction: column; gap: 18px; }
+.text-button, .guest-button {
+  width: 100%;
+  min-height: 38px;
+  margin-top: 14px;
+  padding: 0 10px;
+  background: transparent;
+  color: #b7adff;
+}
+.guest-button {
+  min-height: 44px;
+  border: 1px solid #51449b;
+  border-radius: 10px;
+  background: #17152a;
+  color: #e0dcff;
+}
+.auth-actions { display: flex; gap: 12px; }
+.auth-actions .text-button { flex: 1; }
+
+@media (max-width: 520px) {
+  .auth-card { padding: 24px; }
+}

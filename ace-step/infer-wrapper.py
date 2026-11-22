@@ -16,7 +16,6 @@ pipeline = None
 class GenerateRequest(BaseModel):
     prompt: str
     lyrics: str = ""
-    audio_duration: float = Field(default=30.0, ge=10.0, le=240.0)
     infer_step: int = Field(default=27, ge=10, le=100)
     guidance_scale: float = Field(default=15.0, ge=1.0, le=30.0)
     output_path: str = "/app/outputs"
@@ -54,7 +53,6 @@ async def generate(request: GenerateRequest):
     model = get_pipeline()
     model(
         format="wav",
-        audio_duration=request.audio_duration,
         prompt=request.prompt,
         lyrics=request.lyrics,
         infer_step=request.infer_step,
