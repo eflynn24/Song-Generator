@@ -172,9 +172,10 @@ def build_music_form(
 
 
 async def generate_audio(
-    request: SongRequest, lyrics: str, output_dir: Path, reference_audio: Path | None
+    request: SongRequest, lyrics: str, output_dir: Path, reference_audio: Path | None,
+    seed: int | None = None,
 ) -> Path:
-    data = build_music_form(request, lyrics, uuid.uuid4().int % 2**31)
+    data = build_music_form(request, lyrics, seed if seed is not None else uuid.uuid4().int % 2**31)
     files = None
     source = None
     try:

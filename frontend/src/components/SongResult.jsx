@@ -91,6 +91,12 @@ export function SongResult({ job }) {
           </select>
         </label>
       )}
+      {job.request?.variation_count > 1 && (
+        <p className="field-note">
+          Seed {job.request.variation_seeds?.[variation - 1] ?? "unknown"}
+          {job.request.variation_prompts?.[variation - 1] && ` · ${job.request.variation_prompts[variation - 1]}`}
+        </p>
+      )}
       <audio controls preload="metadata" src={`${job.mp3_url || job.audio_url}${variation > 1 ? `?variation=${variation}` : ""}`}>
         Your browser does not support audio playback.
       </audio>

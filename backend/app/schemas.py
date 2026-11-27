@@ -37,6 +37,8 @@ class SongRequest(BaseModel):
         "turbo-lite", "turbo", "turbo-shift1", "turbo-shift3", "sft", "xl-turbo", "xl-sft", "minimax-music3"
     ] = "turbo"
     variation_count: int = Field(default=1, ge=1, le=3)
+    variation_prompts: list[str] = Field(default_factory=list, max_length=3)
+    variation_seeds: list[int] = Field(default_factory=list, max_length=3)
     genres: list[
         Literal[
             "Pop", "Rock", "Hip-hop / rap", "R&B / soul", "Country", "Jazz",

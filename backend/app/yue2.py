@@ -23,8 +23,8 @@ def build_yue2_request(request: SongRequest, lyrics: str, seed: int) -> dict[str
     return {"style": style[:2000], "lyrics": lyrics if request.vocals else "[Instrumental]", "seed": seed}
 
 
-async def generate_yue2_audio(request: SongRequest, lyrics: str, output_dir: Path) -> Path:
-    payload = build_yue2_request(request, lyrics, uuid.uuid4().int % (2**31))
+async def generate_yue2_audio(request: SongRequest, lyrics: str, output_dir: Path, seed: int | None = None) -> Path:
+    payload = build_yue2_request(request, lyrics, seed if seed is not None else uuid.uuid4().int % (2**31))
     async with httpx.AsyncClient(timeout=3600) as client:
         response = await client.post(f"{YUE2_URL}/generate", json=payload)
         if response.is_error:

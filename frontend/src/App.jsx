@@ -58,17 +58,25 @@ export default function App() {
       return undefined;
     }
     let active = true;
-    apiRequest("/songs")
-      .then((songs) => active && setLibrary(songs))
+    const refresh = () => apiRequest("/songs")
+      .then((songs) => {
+        if (!active) return;
+        setLibrary(songs);
+        setLibraryError("");
+        setJob((current) => songs.find((song) => song.id === current?.id) || current);
+      })
       .catch((error) => {
         if (!active) return;
         if (error.status === 401) setAccount(null);
         setLibraryError(error.message);
       });
+    refresh();
+    const timer = window.setInterval(refresh, 3000);
     return () => {
       active = false;
+      window.clearInterval(timer);
     };
-  }, [account, job?.status]);
+  }, [account]);
 
   useEffect(() => {
     if (!job || !["queued", "generating"].includes(job.status)) return undefined;
@@ -178,6 +186,7 @@ export default function App() {
       body: JSON.stringify({ ...form, reference_audio_id: referenceAudioId }),
     });
     setJob(newJob);
+    setLibrary((songs) => [newJob, ...songs]);
   };
 
   const deleteSong = async (songId) => {
@@ -267,7 +276,6 @@ export default function App() {
       <section className="workspace">
         <div className="studio-column">
           <SongForm
-            busy={Boolean(job && ["queued", "generating"].includes(job.status))}
             minimaxAvailable={Boolean(health?.minimax)}
             onGenerate={generate}
           />

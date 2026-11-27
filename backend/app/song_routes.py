@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import secrets
 import tempfile
 import uuid
 from pathlib import Path
@@ -69,12 +70,17 @@ async def _generate_song(
             uses_minimax = request.generation_model == "minimax-music3"
             with tempfile.TemporaryDirectory(dir=GENERATED_DIR) as temporary_dir:
                 for variation in range(1, request.variation_count + 1):
+                    direction = request.variation_prompts[variation - 1].strip() if len(request.variation_prompts) >= variation else ""
+                    variation_request = request.model_copy(update={
+                        "prompt": f"{request.prompt.strip()}\nVariation {variation} direction: {direction}"[:2000] if direction else request.prompt,
+                    })
+                    seed = request.variation_seeds[variation - 1]
                     if uses_minimax:
-                        generated = await generate_minimax_audio(request, lyrics, Path(temporary_dir))
+                        generated = await generate_minimax_audio(variation_request, lyrics, Path(temporary_dir), seed)
                     elif request.generation_model == "yue2":
-                        generated = await generate_yue2_audio(request, lyrics, Path(temporary_dir))
+                        generated = await generate_yue2_audio(variation_request, lyrics, Path(temporary_dir), seed)
                     else:
-                        generated = await generate_audio(request, lyrics, Path(temporary_dir), reference)
+                        generated = await generate_audio(variation_request, lyrics, Path(temporary_dir), reference, seed)
                     await asyncio.to_thread(
                         finalize_audio,
                         song_id,
@@ -134,6 +140,12 @@ def create_job(
     if request.generation_model == "minimax-music3" and request.reference_audio_id:
         raise HTTPException(status_code=422, detail="MiniMax Music 3 uses text and lyrics. Choose ACE-Step for MP3 references.")
     song_id = str(uuid.uuid4())
+    if any(len(direction) > 500 for direction in request.variation_prompts):
+        raise HTTPException(status_code=422, detail="Variation directions must be at most 500 characters.")
+    seeds = [secrets.randbelow(2**31) for _ in range(request.variation_count)]
+    while len(set(seeds)) != len(seeds):
+        seeds = [secrets.randbelow(2**31) for _ in range(request.variation_count)]
+    request = request.model_copy(update={"variation_seeds": seeds})
     user_id = _user_id(user)
     stored_request = request.model_copy(update={"reference_audio_id": None})
     storage.create_song(user_id, song_id, request.model_dump_json(), status="queued")

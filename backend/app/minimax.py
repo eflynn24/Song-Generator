@@ -137,9 +137,9 @@ def build_workflow(request: SongRequest, lyrics: str, seed: int, prefix: str) ->
     }
 
 
-async def generate_minimax_audio(request: SongRequest, lyrics: str, output_dir: Path) -> Path:
+async def generate_minimax_audio(request: SongRequest, lyrics: str, output_dir: Path, seed: int | None = None) -> Path:
     prefix = uuid.uuid4().hex
-    graph = build_workflow(request, lyrics, uuid.uuid4().int % 2**31, prefix)
+    graph = build_workflow(request, lyrics, seed if seed is not None else uuid.uuid4().int % 2**31, prefix)
     async with httpx.AsyncClient(base_url=MINIMAX_URL, timeout=15) as client:
         response = await client.post("/prompt", json={"prompt": graph})
         if response.is_error:

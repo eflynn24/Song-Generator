@@ -4,6 +4,8 @@ const INITIAL_FORM = {
   prompt: "",
   duration_seconds: 120,
   generation_model: "turbo",
+  variation_count: 1,
+  variation_prompts: [],
   genres: [],
   key_scale: "",
   vocal_language: "en",
@@ -105,7 +107,7 @@ export function SongForm({ busy, minimaxAvailable, onGenerate }) {
       [name]:
         type === "checkbox"
           ? checked
-          : name === "duration_seconds"
+            : ["duration_seconds", "variation_count"].includes(name)
             ? value === "" ? null : Number(value)
             : value,
     }));
@@ -276,6 +278,30 @@ export function SongForm({ busy, minimaxAvailable, onGenerate }) {
           {minimaxAvailable && <option value="minimax-music3">MiniMax Music 3 · 11B, detailed songs</option>}
         </select>
       </label>
+      <label>
+        Versions to generate
+        <select name="variation_count" value={form.variation_count} onChange={update}>
+          <option value="1">1 version</option>
+          <option value="2">2 versions</option>
+          <option value="3">3 versions</option>
+        </select>
+      </label>
+      {form.variation_count > 1 && Array.from({ length: form.variation_count }, (_, index) => (
+        <label key={index}>
+          Version {index + 1} direction (optional)
+          <input
+            value={form.variation_prompts[index] || ""}
+            maxLength={500}
+            placeholder={index === 0 ? "e.g. sparse acoustic opening" : "e.g. bigger chorus and brighter drums"}
+            onChange={(event) => setForm((current) => {
+              const variation_prompts = [...current.variation_prompts];
+              variation_prompts[index] = event.target.value;
+              return { ...current, variation_prompts };
+            })}
+          />
+        </label>
+      ))}
+      {form.variation_count > 1 && <p className="field-note">Each version uses a different saved seed. Leave directions blank for alternate takes of the same description.</p>}
       {form.generation_model === "turbo-lite" && (
         <p className="field-note">
           Uses the same 2B Turbo audio model, but skips the 0.6B composition
@@ -401,8 +427,8 @@ export function SongForm({ busy, minimaxAvailable, onGenerate }) {
         </>
       )}
       {error && <p className="inline-error">{error}</p>}
-      <button type="submit" disabled={busy || submitting}>
-        {busy || submitting ? "Starting..." : "Generate song"}
+      <button type="submit" disabled={submitting}>
+        {submitting ? "Adding to queue..." : "Add song to queue"}
       </button>
     </form>
   );
