@@ -1,7 +1,7 @@
 # Local Song Generator
 
 ## Open in browser
-http://localhost:5173
+https://experiment-unlikely-yeast-stockings.trycloudflare.com/
 
 A self-hosted song studio with temporary guest sessions, persistent user
 libraries, AI-written lyrics, and ACE-Step audio generation.
