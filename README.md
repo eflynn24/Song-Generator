@@ -139,14 +139,26 @@ Use `docker compose down` to stop the services.
 
 ## Configuration and remote access
 
+For free public HTTPS access without router port forwarding, enable the
+`public` Compose profile alongside any model profiles in `.env`:
+
+```dotenv
+COMPOSE_PROFILES=minimax,public
+```
+
+Run `./run.sh`, then `./public-url.sh` to print the current HTTPS link. The
+description link in the studio uses that same hostname. This uses Cloudflare's
+free Quick Tunnel: the address changes when the tunnel restarts and has no
+uptime guarantee. A permanent custom domain requires registering a name and
+configuring a named tunnel or another public HTTPS endpoint.
+
 The installer creates `.env` from `.env.example`. `OLLAMA_MODEL`,
 `ACE_STEP_MODEL`, `ACE_STEP_QUALITY_MODEL`, `ACE_STEP_LM_MODEL`,
 `ACESTEP_OFFLOAD_TO_CPU`, `ACESTEP_OFFLOAD_DIT_TO_CPU`, and
 `ACESTEP_LM_OFFLOAD_TO_CPU` select the models and memory settings. The
-Compose-published ports bind to localhost. Do not expose the app directly over
-plain HTTP; for remote use, place an HTTPS reverse proxy in front of it, keep
-`COOKIE_SECURE=true`, and set `CORS_ORIGINS` to the HTTPS origin. Apply rate
-limiting at the public proxy.
+Compose-published app ports bind to localhost. Keep `COOKIE_SECURE=true` for
+public access. The frontend proxies API calls on the same origin, so the public
+tunnel does not require an extra CORS origin.
 
 ## Tests
 

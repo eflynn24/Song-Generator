@@ -30,6 +30,9 @@ echo
 echo "Song Generator is running:"
 echo "  Application: http://localhost:5173"
 echo "  API docs:    http://localhost:8000/docs"
+if docker compose ps --services --status running | rg -q '^public-tunnel$'; then
+  echo "  Public HTTPS: $(./public-url.sh 2>/dev/null || echo 'starting; run ./public-url.sh shortly')"
+fi
 echo
 echo "Continue as guest for a temporary session, or sign in/create an account"
 echo "to keep songs in a persistent library. Guest data is erased when you end"
@@ -38,5 +41,5 @@ echo "Describe a song, choose vocals/instruments, and generate. ACE-Step uses it
 echo "default song length. You can optionally add an MP3 reference."
 echo "View logs with: docker compose logs -f"
 echo "Stop containers with: docker compose down"
-echo "Ports are localhost-only. Use an HTTPS reverse proxy before remote access."
+echo "The public tunnel uses a new HTTPS address after each restart."
 
