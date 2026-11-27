@@ -100,11 +100,11 @@ export function SongResult({ job }) {
       <audio controls preload="metadata" src={`${job.mp3_url || job.audio_url}${variation > 1 ? `?variation=${variation}` : ""}`}>
         Your browser does not support audio playback.
       </audio>
-      <a className="download" href={`${job.mp3_url || job.audio_url}${variation > 1 ? `?variation=${variation}` : ""}`} download>
+      <a className="download" href={`${job.mp3_url || job.audio_url}?${variation > 1 ? `variation=${variation}&` : ""}download=true`} download>
         Download MP3{job.request?.variation_count > 1 ? ` · Variation ${variation}` : ""}
       </a>
       {job.wav_url && variation === 1 && (
-        <a className="download" href={job.wav_url} download>
+        <a className="download" href={`${job.wav_url}?download=true`} download>
           Download{job.request?.studio_master ? " 24-bit" : ""} WAV
         </a>
       )}

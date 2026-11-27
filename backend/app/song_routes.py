@@ -180,6 +180,7 @@ def get_audio(
     job_id: str,
     format: str,
     variation: int = 1,
+    download: bool = False,
     user: dict[str, object] = Depends(require_ready_user),
 ) -> FileResponse:
     if format not in {"mp3", "wav"}:
@@ -197,7 +198,10 @@ def get_audio(
     if not path.is_file():
         raise HTTPException(status_code=404, detail="Audio not found.")
     media_type = "audio/mpeg" if format == "mp3" else "audio/wav"
-    return FileResponse(path, media_type=media_type, filename=path.name)
+    return FileResponse(
+        path, media_type=media_type, filename=path.name,
+        content_disposition_type="attachment" if download else "inline",
+    )
 
 
 @router.delete("/songs/{song_id}", status_code=204)

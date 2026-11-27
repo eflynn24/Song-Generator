@@ -34,7 +34,7 @@ class SongRequest(BaseModel):
     prompt: str = Field(min_length=3, max_length=2000)
     duration_seconds: int = Field(default=30, ge=30, le=120)
     generation_model: Literal[
-        "turbo-lite", "turbo", "turbo-shift1", "turbo-shift3", "sft", "xl-turbo", "xl-sft", "minimax-music3"
+        "turbo-lite", "turbo", "turbo-shift1", "turbo-shift3", "sft", "xl-turbo", "xl-sft", "minimax-music3", "yue2"
     ] = "turbo"
     variation_count: int = Field(default=1, ge=1, le=3)
     variation_prompts: list[str] = Field(default_factory=list, max_length=3)
