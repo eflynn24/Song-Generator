@@ -13,6 +13,7 @@ OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2")
 MUSIC_API_URL = os.getenv("MUSIC_API_URL", "http://ace-step:8001").rstrip("/")
 MINIMAX_URL = os.getenv("MINIMAX_URL", "http://minimax:8188").rstrip("/")
 MINIMAX_OUTPUT_DIR = Path(os.getenv("MINIMAX_OUTPUT_DIR", "/app/minimax-output"))
+YUE2_URL = os.getenv("YUE2_URL", "http://localhost:8189").rstrip("/")
 ACE_STEP_MODEL = os.getenv("ACE_STEP_MODEL", "acestep-v15-turbo")
 ACE_STEP_QUALITY_MODEL = os.getenv(
     "ACE_STEP_QUALITY_MODEL", "acestep-v15-xl-sft"

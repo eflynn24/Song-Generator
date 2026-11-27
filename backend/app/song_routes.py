@@ -13,6 +13,7 @@ from .audio import finalize_audio, generate_audio
 from .auth_routes import require_ready_user
 from .lyrics import generate_lyrics
 from .minimax import generate_minimax_audio
+from .yue2 import generate_yue2_audio
 from .schemas import Job, SongRequest
 from .settings import GENERATED_DIR, OLLAMA_MODEL, OLLAMA_URL, UPLOAD_DIR
 
@@ -70,6 +71,8 @@ async def _generate_song(
                 for variation in range(1, request.variation_count + 1):
                     if uses_minimax:
                         generated = await generate_minimax_audio(request, lyrics, Path(temporary_dir))
+                    elif request.generation_model == "yue2":
+                        generated = await generate_yue2_audio(request, lyrics, Path(temporary_dir))
                     else:
                         generated = await generate_audio(request, lyrics, Path(temporary_dir), reference)
                     await asyncio.to_thread(

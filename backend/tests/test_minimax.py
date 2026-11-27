@@ -42,3 +42,23 @@ def test_minimax_strips_performance_notes_from_section_headings_only():
         "[Pre-Chorus]\r\nLet it fall (let it fall)\r\n"
         "[Chorus]\r\n[Outro]\r\nI wrote [Verse 1 - a note] on the wall"
     )
+
+
+def test_minimax_arranges_supplied_lyrics_in_order_and_keeps_notes_out_of_sung_lines():
+    lyrics = (
+        "[Verse 1 - half-spoken]\nThe kettle clicks\n"
+        "[Chorus]\nLeave the light on\n"
+        "[Bridge]\nI open the door\n"
+        "[Chorus]\nLeave the light on"
+    )
+    request = SongRequest(prompt="Sparse folk with piano", lyrics=lyrics, vocal_preset="natural")
+    encode = build_workflow(request, lyrics, 42, "test")["encode"]["inputs"]
+    caption = encode["caption"]
+
+    assert caption.index("Verse 1:") < caption.index("Chorus:") < caption.index("Bridge:")
+    assert "Performance cue: half-spoken." in caption
+    assert "half-spoken" not in encode["lyrics"]
+    assert "Leave the light on" not in caption
+    assert encode["lyrics"] == lyrics.replace(" - half-spoken", "")
+    assert caption.count("Blend quiet harmonies") == 1
+    assert caption.rindex("Chorus:") < caption.index("Blend quiet harmonies")

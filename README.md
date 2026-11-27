@@ -45,6 +45,23 @@ Open [http://localhost:5173](http://localhost:5173). Sign in, create an account,
 or choose **Continue as guest**. The API documentation is at
 [http://localhost:8000/docs](http://localhost:8000/docs).
 
+The song description field also includes a clickable link to open the studio
+in your browser at [http://localhost:5173](http://localhost:5173).
+
+### YuE2 worker (experimental)
+
+YuE2 runs as a separate, low-VRAM worker. A short test song completed on an
+RTX 5080 with 16 GiB VRAM, but took about 50 seconds and generated 38.9 seconds
+of audio. Requested-length behavior and longer songs still need validation
+before YuE2 is enabled in the model picker. Weights are downloaded into
+persistent Docker volumes by the project pull script. YuE2 weights are licensed
+CC BY-NC 4.0; commercial use requires a separate license from the authors.
+
+```bash
+./pull.sh --yue2
+docker compose --profile yue2 up -d --build
+```
+
 ### MiniMax Music 3
 
 For local MiniMax Music 3 generation, enable the `minimax` Compose profile.

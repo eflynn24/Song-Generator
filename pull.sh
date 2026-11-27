@@ -23,3 +23,9 @@ if [[ "${1:-}" == "--minimax" ]] || docker compose config --services | grep -qx 
     vae/minimax_music3_dav.safetensors \
     --revision 9e364ccd290a401561091fb441ed19cd7de92550 --local-dir /opt/comfy/models
 fi
+
+if [[ "${1:-}" == "--yue2" ]]; then
+  docker compose --profile yue2 build yue2
+  docker compose --profile yue2 run --rm --no-deps -T --entrypoint python yue2 -c \
+    'from huggingface_hub import snapshot_download; snapshot_download("m-a-p/YuE2-3B"); snapshot_download("m-a-p/YuE2-Vae")'
+fi
