@@ -44,12 +44,13 @@ also fills the persistent model volumes and checks for missing checkpoint
 shards. A fresh pull needs several dozen gigabytes of model storage. Cached
 checkpoints are reused on subsequent pulls.
 
-Open [http://localhost:5173](http://localhost:5173). Sign in, create an account,
-or choose **Continue as guest**. The API documentation is at
+Open `http://<server-ip>:5173` in a browser on your network (for this machine,
+`http://172.23.42.239:5173`). Sign in, create an account, or choose **Continue
+as guest**. The API documentation is at
 [http://localhost:8000/docs](http://localhost:8000/docs).
 
-The song description field also includes a clickable link to open the studio
-in your browser at [http://localhost:5173](http://localhost:5173).
+The song description field links to the same host and port used to open the
+studio, so the link works from other devices on your network too.
 
 ### YuE2 worker (experimental)
 

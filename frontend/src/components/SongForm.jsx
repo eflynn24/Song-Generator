@@ -216,7 +216,7 @@ export function SongForm({ busy, minimaxAvailable, onGenerate }) {
           required
         />
         <span className="field-note">
-          Open in your browser: <a href="http://localhost:5173" target="_blank" rel="noreferrer">http://localhost:5173</a>
+          Open in your browser: <a href={window.location.origin} target="_blank" rel="noreferrer">{window.location.host}</a>
         </span>
       </label>
       <button className="secondary-button prompt-enhance-button" type="button" onClick={enhancePrompt}>
