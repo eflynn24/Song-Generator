@@ -37,7 +37,6 @@ textarea:focus, input:focus, select:focus {
 .field-note { margin: -12px 0 0; color: #858da2; font-size: 12px; line-height: 1.5; }
 .toggle { flex-direction: row; align-items: center; color: #d8dbea; }
 .toggle input { width: 16px; height: 16px; accent-color: #8069f2; }
-.vocal-controls { align-items: end; }
 
 .instruments {
   display: grid;
@@ -49,6 +48,7 @@ textarea:focus, input:focus, select:focus {
   padding: 12px;
 }
 .instruments legend { color: #bec4d3; font-size: 13px; font-weight: 700; }
+.genre-options { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .instrument {
   flex-direction: row;
   align-items: center;
@@ -60,6 +60,7 @@ textarea:focus, input:focus, select:focus {
 }
 .instrument input { width: 15px; height: 15px; }
 .rights-check { padding: 10px; border-radius: 8px; background: #151927; }
+.prompt-enhance-button { align-self: flex-start; }
 
 button, .download {
   min-height: 44px;

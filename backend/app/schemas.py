@@ -31,18 +31,27 @@ class AccountResponse(BaseModel):
 
 
 class SongRequest(BaseModel):
-    prompt: str = Field(min_length=3, max_length=1200)
+    prompt: str = Field(min_length=3, max_length=2000)
     duration_seconds: int = Field(default=30, ge=30, le=120)
     generation_model: Literal[
-        "turbo", "turbo-shift1", "turbo-shift3", "sft", "xl-turbo", "xl-sft"
+        "turbo-lite", "turbo", "turbo-shift1", "turbo-shift3", "sft", "xl-turbo", "xl-sft", "minimax-music3"
     ] = "turbo"
     variation_count: int = Field(default=1, ge=1, le=3)
+    genres: list[
+        Literal[
+            "Pop", "Rock", "Hip-hop / rap", "R&B / soul", "Country", "Jazz",
+            "Electronic / EDM", "Indie / alternative", "Folk / acoustic", "Metal",
+            "Reggae", "Blues", "Classical / cinematic", "Latin", "Funk / disco",
+        ]
+    ] = Field(default_factory=list, max_length=15)
+    # Kept for older saved requests that used a free-text genre field.
     genre: str = Field(default="", max_length=80)
     mood: str = Field(default="", max_length=80)
     bpm: int | None = Field(default=None, ge=40, le=220)
     key_scale: str = Field(default="", max_length=32)
     time_signature: Literal["", "2", "3", "4", "6"] = ""
     normalize_audio: bool = False
+    studio_master: bool = False
     fade_in: bool = False
     fade_out: bool = False
     vocal_language: Literal[
@@ -58,8 +67,9 @@ class SongRequest(BaseModel):
     lyrics: str = Field(default="", max_length=6000)
     instruments: list[str] = Field(default_factory=list)
     vocal_style: str = Field(default="", max_length=100)
+    vocal_preset: Literal["auto", "natural", "clear", "intimate", "soul", "rock", "harmonies"] = "auto"
     reference_audio_id: str | None = None
-    reference_strength: float = Field(default=0.45, ge=0.0, le=1.0)
+    reference_strength: float = Field(default=0.7, ge=0.0, le=1.0)
 
 
 class Job(BaseModel):

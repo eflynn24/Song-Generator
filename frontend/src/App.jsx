@@ -82,7 +82,7 @@ export default function App() {
         if (error.status === 401) setAccount(null);
         setJob({ ...job, status: "failed", error: error.message });
       }
-    }, 2000);
+    }, job.status === "queued" ? 2000 : 1000);
     return () => {
       active = false;
       window.clearTimeout(timer);
@@ -268,6 +268,7 @@ export default function App() {
         <div className="studio-column">
           <SongForm
             busy={Boolean(job && ["queued", "generating"].includes(job.status))}
+            minimaxAvailable={Boolean(health?.minimax)}
             onGenerate={generate}
           />
           <SongLibrary

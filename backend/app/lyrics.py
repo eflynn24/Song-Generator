@@ -8,45 +8,123 @@ from .schemas import SongRequest
 
 logger = logging.getLogger(__name__)
 
+LYRIC_LANGUAGES = {
+    "en": "English",
+    "es": "Spanish",
+    "zh": "Chinese",
+    "ja": "Japanese",
+    "ko": "Korean",
+    "fr": "French",
+    "de": "German",
+    "pt": "Portuguese",
+}
+
+VOCAL_SECTION_CUES = {
+    "natural": {
+        "Verse 1": "close and conversational",
+        "Verse 2": "close and conversational",
+        "Chorus": "open and unforced",
+        "Bridge": "soft and exposed",
+    },
+    "harmonies": {"Chorus": "lead with light backing harmonies"},
+}
+
 
 def _song_title(request: SongRequest) -> str:
-    title = f"{request.mood} {request.genre}".strip()
+    genre = ", ".join(request.genres) if request.genres else request.genre
+    title = f"{request.mood} {genre}".strip()
     if title:
         return title
     return request.prompt.strip().rstrip(".!?")[:60].strip() or "Untitled song"
 
 
+def _lyric_format(duration: int) -> tuple[dict, list[tuple[str, str]]]:
+    line_counts = {
+        "chorus": (2, 2 if duration <= 60 else 4),
+        "verse_one": (3, 4),
+    }
+    sections = [("Verse 1", "verse_one"), ("Chorus", "chorus")]
+    if duration > 30:
+        line_counts["verse_two"] = (3, 4)
+        sections += [("Verse 2", "verse_two"), ("Chorus", "chorus")]
+    if duration >= 90:
+        line_counts["bridge"] = (2, 2 if duration == 90 else 4)
+        sections += [("Bridge", "bridge"), ("Chorus", "chorus")]
+    properties = {"title": {"type": "string"}}
+    for name, (minimum, maximum) in line_counts.items():
+        properties[name] = {
+            "type": "array",
+            "items": {"type": "string"},
+            "minItems": minimum,
+            "maxItems": maximum,
+        }
+    return {
+        "type": "object",
+        "properties": properties,
+        "required": list(properties),
+        "additionalProperties": False,
+    }, sections
+
+
+def _render_lyrics(
+    payload: dict, lyric_format: dict, sections: list[tuple[str, str]], vocal_preset: str,
+) -> tuple[str, str]:
+    title = payload["title"]
+    if not isinstance(title, str) or not title.strip():
+        raise ValueError("The lyrics model returned an empty or invalid title.")
+    cues = VOCAL_SECTION_CUES.get(vocal_preset, {})
+    rendered = []
+    for heading, key in sections:
+        lines = payload[key]
+        bounds = lyric_format["properties"][key]
+        if (
+            not isinstance(lines, list)
+            or not bounds["minItems"] <= len(lines) <= bounds["maxItems"]
+            or any(
+                not isinstance(line, str)
+                or not line.strip()
+                or len(line.splitlines()) != 1
+                or line.lstrip().startswith("[")
+                for line in lines
+            )
+        ):
+            raise ValueError(f"The lyrics model returned an invalid {key} section.")
+        cue = cues.get(heading)
+        label = f"{heading} - {cue}" if cue else heading
+        rendered.append("\n".join([f"[{label}]", *(line.strip() for line in lines)]))
+    return title.strip(), "\n\n".join(rendered)
+
+
 def fallback_lyrics(request: SongRequest) -> tuple[str, str]:
-    title = _song_title(request)
-    lyrics = (
-        "[Verse 1 - expressive]\n"
-        "The morning opens slowly on the avenue\n"
-        "A little light comes breaking through the blue\n"
-        "I take the long way, let the moment breathe\n"
-        "And find a brighter rhythm underneath\n\n"
-        "[Chorus - stronger]\n"
-        "We are here, we are alive\n"
-        "Hear the honest voices rise\n"
-        "Every word is clear and true\n"
-        "Every road can start anew\n\n"
-        "[Verse 2 - warm]\n"
-        "The city hums a melody we know\n"
-        "A steady beat beneath the afterglow\n"
-        "The small things turn to something we can keep\n"
-        "A promise in the quiet, not a dream\n\n"
-        "[Chorus - stronger]\n"
-        "We are here, we are alive\n"
-        "Hear the honest voices rise\n"
-        "Every word is clear and true\n"
-        "Every road can start anew\n\n"
-        "[Bridge - restrained]\n"
-        "Take my hand and count to four\n"
-        "There is room to hope once more\n\n"
-        "[Outro - gentle]\n"
-        "We are here, we are alive\n"
-        "Hear the honest voices rise"
+    verse = (
+        "[Verse 1]\n"
+        "The porch light keeps a ring of rain\n"
+        "Your key still cools beside the door\n"
+        "I turn it in my palm again\n"
+        "As though a room could ask for more"
     )
-    return title, lyrics
+    chorus = (
+        "[Chorus]\n"
+        "Leave the light where I can see it\n"
+        "Let the dark decide what stays"
+    )
+    if request.duration_seconds <= 30:
+        return _song_title(request), f"{verse}\n\n{chorus}"
+
+    second_verse = (
+        "[Verse 2]\n"
+        "By spring the hinge gives up its rust\n"
+        "I oil it with the window wide\n"
+        "The sill wears half an inch of dust\n"
+        "Where I once left your name to dry"
+    )
+    sections = [verse, chorus, second_verse, chorus]
+    if request.duration_seconds >= 90:
+        sections += [
+            "[Bridge]\nI thought the lamp was calling you\nI see what it was keeping now",
+            chorus,
+        ]
+    return _song_title(request), "\n\n".join(sections)
 
 
 async def generate_lyrics(
@@ -64,19 +142,39 @@ async def generate_lyrics(
     if request.lyrics.strip():
         return _song_title(request), request.lyrics.strip()
 
-    system = (
-        "Write original lyrics for a complete song, with clear, natural, "
-        "easy-to-pronounce English and breath-length lines of about 6-10 "
-        "syllables. Use a verse, repeated chorus, second verse, bridge, and "
-        "outro. Use concise performance cues in section headers when useful, "
-        "such as [Verse 1 - intimate], [Chorus - powerful], or "
-        "[Bridge - whispered]. Match cues to the requested vocal style and "
-        "use no more than one cue per header. Write enough lyrics "
-        f"to fit a song about {request.duration_seconds} seconds long without "
-        "cramming. Keep vocal directions in section headers, not in the sung "
-        "lines. Return JSON with string fields title and lyrics only."
+    genre_instruction = (
+        f" Match the selected genre(s): {', '.join(request.genres)}."
+        if request.genres
+        else f" Match the requested genre: {request.genre}."
+        if request.genre.strip()
+        else ""
     )
-    prompt = request.model_dump(exclude={"reference_audio_id"})
+    language = LYRIC_LANGUAGES.get(request.vocal_language)
+    language_instruction = (
+        f"Write the sung lines in {language}."
+        if language
+        else "Write the sung lines in the language requested by the song description."
+    )
+    lyric_format, sections = _lyric_format(request.duration_seconds)
+    system = (
+        f"Write an original song from the supplied brief. {language_instruction} "
+        f"It runs about {request.duration_seconds} seconds. "
+        "Start by writing a chorus hook the singer could actually say. Build the title from "
+        "its most distinctive phrase. Let the verses give that same hook a deeper meaning. "
+        "Open the first verse with an action and a sensory detail from the brief. In the next "
+        "verse, show a consequence or a choice. Use the bridge, when present, to change the "
+        "singer's perspective. Stay with one central image and point of view. "
+        "Read the lines as speech. Stress the important words, aim for roughly 6 to 10 sung "
+        "syllables per line where natural, and keep corresponding verse lines close in length. "
+        "Fit a supplied tempo and meter. Leave room for breaths between phrases. "
+        "Favor internal echoes or slant rhyme "
+        "over forced end rhyme or inverted word order. Use concrete nouns and verbs. "
+        "Use one sung line per array item, without labels or directions. Write the chorus once."
+        + genre_instruction
+    )
+    prompt = request.model_dump(include={
+        "prompt", "mood", "vocal_style", "vocal_preset", "bpm", "time_signature",
+    }, exclude_none=True)
     try:
         async with httpx.AsyncClient(timeout=45) as client:
             response = await client.post(
@@ -91,18 +189,12 @@ async def generate_lyrics(
                             "content": json.dumps(prompt, ensure_ascii=False),
                         },
                     ],
-                    "format": "json",
+                    "format": lyric_format,
                 },
             )
             response.raise_for_status()
             payload = json.loads(response.json()["message"]["content"])
-            title = str(payload.get("title", "")).strip()
-            lyrics = str(payload.get("lyrics", "")).strip()
-            if title and lyrics:
-                return title, lyrics
-            raise ValueError("The lyrics model returned an empty title or lyric.")
+            return _render_lyrics(payload, lyric_format, sections, request.vocal_preset)
     except (httpx.HTTPError, KeyError, TypeError, ValueError):
         logger.warning("Lyrics model unavailable; using built-in lyrics.", exc_info=True)
-        if request.lyrics.strip():
-            return _song_title(request), request.lyrics.strip()
         return fallback_lyrics(request)

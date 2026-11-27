@@ -11,11 +11,16 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434").rstrip("/")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2")
 MUSIC_API_URL = os.getenv("MUSIC_API_URL", "http://ace-step:8001").rstrip("/")
+MINIMAX_URL = os.getenv("MINIMAX_URL", "http://minimax:8188").rstrip("/")
+MINIMAX_OUTPUT_DIR = Path(os.getenv("MINIMAX_OUTPUT_DIR", "/app/minimax-output"))
 ACE_STEP_MODEL = os.getenv("ACE_STEP_MODEL", "acestep-v15-turbo")
 ACE_STEP_QUALITY_MODEL = os.getenv(
     "ACE_STEP_QUALITY_MODEL", "acestep-v15-xl-sft"
 )
 ACE_STEP_MODELS = {
+    # ACE-Step's LM planner is optional per request. This preset skips it for
+    # the quickest, lowest-memory generation path while keeping the 2B Turbo DiT.
+    "turbo-lite": (ACE_STEP_MODEL, 8, None),
     "turbo": (ACE_STEP_MODEL, 8, None),
     "turbo-shift1": ("acestep-v15-turbo-shift1", 8, None),
     "turbo-shift3": ("acestep-v15-turbo-shift3", 8, None),

@@ -12,6 +12,7 @@ from . import media, storage
 from .audio import finalize_audio, generate_audio
 from .auth_routes import require_ready_user
 from .lyrics import generate_lyrics
+from .minimax import generate_minimax_audio
 from .schemas import Job, SongRequest
 from .settings import GENERATED_DIR, OLLAMA_MODEL, OLLAMA_URL, UPLOAD_DIR
 
@@ -64,12 +65,15 @@ async def _generate_song(
             storage.update_song(
                 user_id, song_id, status="generating", title=title, lyrics=lyrics, error=None
             )
+            uses_minimax = request.generation_model == "minimax-music3"
             with tempfile.TemporaryDirectory(dir=GENERATED_DIR) as temporary_dir:
                 for variation in range(1, request.variation_count + 1):
-                    generated = await generate_audio(
-                        request, lyrics, Path(temporary_dir), reference
-                    )
-                    finalize_audio(
+                    if uses_minimax:
+                        generated = await generate_minimax_audio(request, lyrics, Path(temporary_dir))
+                    else:
+                        generated = await generate_audio(request, lyrics, Path(temporary_dir), reference)
+                    await asyncio.to_thread(
+                        finalize_audio,
                         song_id,
                         generated,
                         variation=variation,
@@ -77,7 +81,12 @@ async def _generate_song(
                         fade_out=request.fade_out,
                         duration_seconds=request.duration_seconds,
                         normalize_audio=request.normalize_audio,
+                        studio_master=request.studio_master,
+                        sample_rate=32000 if uses_minimax else 48000,
                     )
+            if storage.get_song(user_id, song_id) is None:
+                media.delete_song_files([song_id])
+                return
             storage.update_song(
                 user_id,
                 song_id,
@@ -119,6 +128,8 @@ def create_job(
     background_tasks: BackgroundTasks,
     user: dict[str, object] = Depends(require_ready_user),
 ) -> Job:
+    if request.generation_model == "minimax-music3" and request.reference_audio_id:
+        raise HTTPException(status_code=422, detail="MiniMax Music 3 uses text and lyrics. Choose ACE-Step for MP3 references.")
     song_id = str(uuid.uuid4())
     user_id = _user_id(user)
     stored_request = request.model_copy(update={"reference_audio_id": None})

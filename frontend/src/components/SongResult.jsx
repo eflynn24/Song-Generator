@@ -97,6 +97,11 @@ export function SongResult({ job }) {
       <a className="download" href={`${job.mp3_url || job.audio_url}${variation > 1 ? `?variation=${variation}` : ""}`} download>
         Download MP3{job.request?.variation_count > 1 ? ` · Variation ${variation}` : ""}
       </a>
+      {job.wav_url && variation === 1 && (
+        <a className="download" href={job.wav_url} download>
+          Download{job.request?.studio_master ? " 24-bit" : ""} WAV
+        </a>
+      )}
       <pre>{job.lyrics}</pre>
     </div>
   );

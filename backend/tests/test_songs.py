@@ -6,7 +6,7 @@ from app import storage
 from app.schemas import SongRequest
 
 
-def test_song_api_has_no_cover_or_duration_features(api_client: TestClient):
+def test_song_api_preserves_requested_duration_without_cover_features(api_client: TestClient):
     assert api_client.post(
         "/api/auth/register",
         json={"username": "listener", "password": "a-private-password-for-listener"},
@@ -27,7 +27,9 @@ def test_song_api_has_no_cover_or_duration_features(api_client: TestClient):
     assert "cover_url" not in job
     assert "cover_error" not in job
     assert "duration_seconds" not in job
-    assert "duration_seconds" not in job["request"]
+    assert job["request"]["duration_seconds"] == 30
+    assert job["request"]["vocal_preset"] == "auto"
+    assert job["request"]["studio_master"] is False
     assert "generate_cover_art" not in job["request"]
 
     assert api_client.get(f"/api/songs/{song_id}/cover").status_code == 404

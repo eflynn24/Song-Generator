@@ -12,6 +12,7 @@ from . import media, storage
 from .auth_routes import router as auth_router
 from .settings import (
     CORS_ORIGINS,
+    MINIMAX_URL,
     MUSIC_API_URL,
     OLLAMA_URL,
     SESSION_COOKIE_SECURE,
@@ -73,6 +74,7 @@ async def health() -> dict[str, bool | str]:
         results = await asyncio.gather(
             client.get(f"{OLLAMA_URL}/api/tags"),
             client.get(f"{MUSIC_API_URL}/health"),
+            client.get(f"{MINIMAX_URL}/system_stats"),
             return_exceptions=True,
         )
     return {
@@ -82,4 +84,5 @@ async def health() -> dict[str, bool | str]:
         "music_api": isinstance(results[1], httpx.Response)
         and results[1].status_code == 200,
         "cookie_secure": SESSION_COOKIE_SECURE,
+        "minimax": isinstance(results[2], httpx.Response) and results[2].status_code == 200,
     }

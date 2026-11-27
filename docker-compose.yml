@@ -21,6 +21,8 @@ services:
       ACESTEP_CONFIG_PATH: ${ACE_STEP_MODEL:-acestep-v15-turbo}
       ACESTEP_LM_MODEL_PATH: ${ACE_STEP_LM_MODEL:-acestep-5Hz-lm-0.6B}
       ACESTEP_DEVICE: ${ACESTEP_DEVICE:-auto}
+      ACESTEP_NO_INIT: ${ACESTEP_NO_INIT:-true}
+      ACESTEP_VAE_CHECKPOINT: ${ACESTEP_VAE_CHECKPOINT:-official}
       ACESTEP_LM_DEVICE: ${ACESTEP_LM_DEVICE:-cpu}
       ACESTEP_LM_BACKEND: ${ACESTEP_LM_BACKEND:-pt}
       ACESTEP_LM_OFFLOAD_TO_CPU: ${ACESTEP_LM_OFFLOAD_TO_CPU:-true}
@@ -48,6 +50,30 @@ services:
       retries: 5
     restart: unless-stopped
 
+  minimax:
+    profiles: [minimax]
+    build:
+      context: ./minimax
+    volumes:
+      - minimax_models:/opt/comfy/models
+      - minimax_outputs:/output
+    environment:
+      HF_HUB_OFFLINE: "1"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8188/system_stats"]
+      interval: 15s
+      timeout: 5s
+      start_period: 60s
+      retries: 4
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+
   backend:
     build:
       context: ./backend
@@ -55,6 +81,7 @@ services:
       OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434}
       OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2}
       MUSIC_API_URL: ${MUSIC_API_URL:-http://ace-step:8000}
+      MINIMAX_URL: ${MINIMAX_URL:-http://minimax:8188}
       ACE_STEP_MODEL: ${ACE_STEP_MODEL:-acestep-v15-turbo}
       ACE_STEP_QUALITY_MODEL: ${ACE_STEP_QUALITY_MODEL:-acestep-v15-xl-sft}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost}
@@ -67,6 +94,7 @@ services:
       - ./backend/data:/app/data
       - ./backend/generated:/app/generated
       - ./backend/uploads:/app/uploads
+      - minimax_outputs:/app/minimax-output
 
   frontend:
     build:
@@ -77,6 +105,8 @@ services:
       - "127.0.0.1:5173:80"
 
 volumes:
+  minimax_models:
+  minimax_outputs:
   ollama_data:
   ace_step_checkpoints:
   ace_step_huggingface:
